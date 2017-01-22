@@ -11,24 +11,24 @@ cat("\014")
 
 #read All files
 #if file is not available then read else load file with all data
-if(! file.exists("00_Data/All_Read.RData")){
-        tweetFile <- file("00_Data/final/en_US/en_US.twitter.txt", "r")
-        blogFile <- file("00_Data/final/en_US/en_US.blogs.txt","r")
-        newsFile <- file("00_Data/final/en_US/en_US.news.txt","r")
+if(! file.exists("./00_Data/All_Read.RData")){
+        tweetFile <- file("./00_Data/final/en_US/en_US.twitter.txt", "r")
+        blogFile <- file("./00_Data/final/en_US/en_US.blogs.txt","r")
+        newsFile <- file("./00_Data/final/en_US/en_US.news.txt","r")
         contentTweet <- readLines(tweetFile)
         contentBlog <- readLines(blogFile)
         contentNews <- readLines(newsFile)
         close(tweetFile)
         close(blogFile)
         close(newsFile)
-        save.image("00_Data/All_Read.RData")
+        save.image("./00_Data/All_Read.RData")
 }else{
-        load("00_Data/All_Read.RData")
+        load("./00_Data/All_Read.RData")
         
 }
 
 #Q1 :  The 𝚎𝚗_𝚄𝚂.𝚋𝚕𝚘𝚐𝚜.𝚝𝚡𝚝  file is how many megabytes?
-file.size("00_Data/final/en_US/en_US.blogs.txt")/2^20
+file.size("./00_Data/final/en_US/en_US.blogs.txt")/2^20
 
 #Q2 : The 𝚎𝚗_𝚄𝚂.𝚝𝚠𝚒𝚝𝚝𝚎𝚛.𝚝𝚡𝚝 has how many lines of text?
 lenTweetFile <- length(contentTweet)
