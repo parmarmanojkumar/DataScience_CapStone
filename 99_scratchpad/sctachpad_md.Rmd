@@ -1,0 +1,474 @@
+---
+title: "Scratchpad"
+author: "Manojkumar Parmar"
+date: "1/23/2017"
+output: 
+  pdf_document: 
+    number_sections: yes
+    toc: yes
+    toc_depth: 5
+  html_document: 
+    number_sections: yes
+    theme: journal
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Environment
+```{r loadlibraries, echo=TRUE, message=FALSE, warning=FALSE}
+#load libraries
+library(datasets)
+library(tm)
+library(SnowballC)
+library(RWeka)
+library(ggplot2)
+library(gridExtra)
+library(wordcloud)
+#cleanup environmant
+rm(list = ls())
+cat("\014")
+```
+
+
+# Procesing Data
+
+## Fetching
+```{r Fetchingdata, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+if(! file.exists("./00_Data/All_Read.RData")){
+        tweetFile <- file("./00_Data/final/en_US/en_US.twitter.txt", "r")
+        blogFile <- file("./00_Data/final/en_US/en_US.blogs.txt","r")
+        newsFile <- file("./00_Data/final/en_US/en_US.news.txt","r")
+        contentTweet <- readLines(tweetFile)
+        contentBlog <- readLines(blogFile)
+        contentNews <- readLines(newsFile)
+        close(tweetFile)
+        close(blogFile)
+        close(newsFile)
+        save.image("./00_Data/All_Read.RData")
+}else{
+        load("./00_Data/All_Read.RData")
+        
+}
+```
+
+Dataset is too big hence & only $1$% of tweet data, $1.5$% of blog data and $1.5$% of news data is used. Also combined version of all data is also prepared.
+```{r resize, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+set.seed(1)
+contentTweet <- sample(contentTweet, length(contentTweet)* 0.01)
+contentBlog <- sample(contentBlog, length(contentBlog) * 0.015)
+contentNews <- sample(contentNews, length(contentNews) * 0.015)
+contentPart <-c(contentTweet, contentBlog, contentNews)
+```
+
+## Cleaning Data
+
+Cleaning Function comprising multiple elements
+
+- Removal of Punctuation
+- Removal of Numbers
+- Removal of URLs &  Email id
+- Removal of Twitter tags & username
+- Removal of profane words ([DataSet1]("https://raw.githubusercontent.com/shutterstock/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en"), [DataSet2]("http://www.frontgatemedia.com/new/wp-content/uploads/2014/03/Terms-to-Block.csv"))
+- Removal of English stop words
+- Removal of White spaces
+- Stemming of documents
+
+```{r processingfunc, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+tm_pre_process <- function(data) {
+        library(tm)
+        
+        # Create patterns to elimina special code and other patterns
+        # URLs
+        urlPat <- function(x)
+                gsub("(ftp|http)(s?)://.*\\b", "", x)
+        # Emails
+        emlPat <-
+                function(x)
+                        gsub("\\b[A-Z a-z 0-9._ - ]*[@](.*?)[.]{1,3} \\b", "", x)
+        # Twitter tags
+        tt <- function(x)
+                gsub("RT |via", "", x)
+        # Twitter Usernames
+        tun <- function(x)
+                gsub("[@][a - zA - Z0 - 9_]{1,15}", "", x)
+        #Remove profane words
+        pwdat <-
+                read.table(
+                        "./00_Data/final/profane_words/en_bws.txt",
+                        header = FALSE,
+                        sep = "\n",
+                        strip.white = TRUE
+                )
+        names(pwdat) <- "Profane Words"
+        pwdat1 <- read.csv("./00_Data/final/profane_words/Terms-to-Block.csv")
+        pwdat1 <- pwdat1[-(1:3), 2]
+        pwdat1 <- gsub(",","",pwdat1)
+        stpWrdList <- c(as.character(pwdat[,1]), 
+                        pwdat1,
+                        stopwords("english")
+                        )
+        
+        corpusTitle = Corpus(VectorSource(data))
+        corpusTitle = tm_map(corpusTitle, tolower)
+        corpusTitle = tm_map(corpusTitle, PlainTextDocument)
+        corpusTitle = tm_map(corpusTitle, removePunctuation)
+        corpusTitle = tm_map(corpusTitle, removeNumbers)
+        corpusTitle = tm_map(corpusTitle, urlPat)
+        corpusTitle = tm_map(corpusTitle, emlPat)
+        corpusTitle = tm_map(corpusTitle, tt)
+        corpusTitle = tm_map(corpusTitle, tun)
+        corpusTitle = tm_map(corpusTitle, removeWords, stpWrdList)
+        corpusTitle = tm_map(corpusTitle, stemDocument)
+        corpusTitle = tm_map(corpusTitle, stripWhitespace)
+        corpusTitle
+}
+```
+
+Using above mentioned pre processing function, lets clean all corpus.
+```{r processingdata, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+corpusTweet <- tm_pre_process(contentTweet)
+corpusNews <- tm_pre_process(contentNews)
+corpusBlog <- tm_pre_process(contentBlog)
+corpusPart <- tm_pre_process(contentPart)
+```
+
+## Tokenization of data
+
+Tokenization function generates dataset based on given token count. Multiple token count is refered as per below
+
+- 1 token : UniGram
+- 2 token : BiGram
+- 3 token : TriGram
+- 4 token : QuadGram
+
+Tokenization function also provides top enties where maximum freuqncy of tokens are present.
+
+```{r tokenfunc, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+#tokenizer function
+tokenizer <- function(corpusTitle, tokenCount) {
+        token <- NGramTokenizer(
+                corpusTitle,
+                Weka_control(
+                        min = tokenCount,
+                        max = tokenCount,
+                        delimiters = " \\r\\n\\t.,;:\"()?!"
+                )
+        )
+        token
+}
+
+#function to generate top values from given token count
+gramTopCount <- function(corpusTitle, tokenCount, TopCount = 0) {
+        token <- tokenizer(corpusTitle, tokenCount)
+        gram <- data.frame(table(token))
+        gram <- gram[order(gram$Freq, decreasing = T), ]
+        rownames(gram) <- NULL
+        colnames(gram) <- c("Word", "Frequency")
+        if(TopCount > 0){
+                gram <- gram[1:TopCount, ]
+                print(gramPlot(gram))
+        }
+        gram
+}
+```
+
+Using above function, lets tokenize various corpses.
+```{r tokenizationdata, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+#Generate unigram, bigram, trigram & quadgram for blog dataset
+blog.unigram <- gramTopCount(corpusBlog, 1)
+blog.digram <- gramTopCount(corpusBlog, 2)
+blog.trigram <- gramTopCount(corpusBlog, 3)
+blog.quadgram <- gramTopCount(corpusBlog, 4)
+#Generate unigram, bigram, trigram & quadgram for news dataset
+news.unigram <- gramTopCount(corpusNews, 1)
+news.digram <- gramTopCount(corpusNews, 2)
+news.trigram <- gramTopCount(corpusNews, 3)
+news.quadgram <- gramTopCount(corpusNews, 4)
+#Generate unigram, bigram, trigram & quadgram for tweet dataset
+tweet.unigram <- gramTopCount(corpusTweet, 1)
+tweet.digram <- gramTopCount(corpusTweet, 2)
+tweet.trigram <- gramTopCount(corpusTweet, 3)
+tweet.quadgram <- gramTopCount(corpusTweet, 4)
+#Generate unigram, bigram, trigram & quadgram for all dataset
+part.unigram <- gramTopCount(corpusPart, 1)
+part.digram <- gramTopCount(corpusPart, 2)
+part.trigram <- gramTopCount(corpusPart, 3)
+part.quadgram <- gramTopCount(corpusPart, 4)
+```
+
+# Visualization
+
+## Histogram
+
+### Function
+
+```{r gramPlotQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+gramPlotQuad <-
+        function(tweetgram,
+                 bloggram,
+                 newsgram,
+                 partgram,
+                 title = "NoGram",
+                 TopCount = 10) {
+                gtweet <-
+                        ggplot(head(tweetgram, TopCount),
+                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                        geom_bar(stat = "Identity", fill = "#1dcaff") +
+                        geom_text(aes(label = Frequency),
+                                  hjust = 1,
+                                  angle = 90) +
+                        xlab("Word") +
+                        ggtitle(paste("Tweets", title)) +
+                        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                gblog <-
+                        ggplot(head(bloggram, TopCount),
+                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                        geom_bar(stat = "Identity", fill = "orange") +
+                        geom_text(aes(label = Frequency),
+                                  hjust = 1,
+                                  angle = 90) +
+                        xlab("Word") +
+                        ggtitle(paste("Blogs", title)) +
+                        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                gnews <-
+                        ggplot(head(newsgram, TopCount),
+                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                        geom_bar(stat = "Identity", fill = "#87F717") +
+                        geom_text(aes(label = Frequency),
+                                  hjust = 1,
+                                  angle = 90) +
+                        xlab("Word") +
+                        ggtitle(paste("News", title)) +
+                        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                gall <-
+                        ggplot(head(partgram, TopCount),
+                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                        geom_bar(stat = "Identity", fill = "#F6358A") +
+                        geom_text(aes(label = Frequency),
+                                  hjust = 1,
+                                  angle = 90) +
+                        xlab("Word") +
+                        ggtitle(paste("All Source", title)) +
+                        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                grid.arrange(gtweet,
+                             gblog,
+                             gnews,
+                             gall,
+                             ncol = 2,
+                             nrow = 2)
+                
+        }
+
+
+```
+
+
+### Visualization
+
+```{r loadmain data, message=FALSE, warning=FALSE, include=FALSE}
+#load dataset
+load("/Users/VirKrupa/Documents/01_Courses/40_DataScience_Capstone/Assignment/DataScience_CapStone/00_Data/final_plot_Data.RData")
+```
+
+Lets Plot th graphs
+
+#### Top 10 UniGrams across all datasets
+
+```{r gramPlotQuadVis1, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+g1 <- gramPlotQuad(
+        tweetgram = tweet.unigram,
+        bloggram = blog.unigram,
+        newsgram = news.unigram,
+        partgram = part.unigram,
+        title = "UniGram"
+)
+```
+
+```{r gramPlotQuadVis1plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(g1)
+```
+
+
+#### Top 10 Bigrams across all datasets
+
+```{r gramPlotQuadVis2, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+g2 <- gramPlotQuad(
+        tweetgram = tweet.digram,
+        bloggram = blog.digram,
+        newsgram = news.digram,
+        partgram = part.digram,
+        title = "BiGram"
+)
+```
+
+```{r gramPlotQuadVis2plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(g2)
+```
+
+#### Top 10 TriGrams across all datasets
+
+```{r gramPlotQuadVis3, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+g3 <- gramPlotQuad(
+        tweetgram = tweet.trigram,
+        bloggram = blog.trigram,
+        newsgram = news.trigram,
+        partgram = part.trigram,
+        title = "TriGram"
+)
+```
+
+```{r gramPlotQuadVis3plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(g3)
+```
+
+#### Top 10 QuadGrams across all datasets
+
+```{r gramPlotQuadVis4, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+g4 <- gramPlotQuad(
+        tweetgram = tweet.quadgram,
+        bloggram = blog.quadgram,
+        newsgram = news.quadgram,
+        partgram = part.quadgram,
+        title = "QuadGram"
+)
+```
+
+```{r gramPlotQuadVis4plot, echo=FALSE, fig.height=9, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(g4)
+```
+
+### Discussion
+
+All application needs different type of modeling as distribution of various grams differes.
+
+## WordCloud
+
+### Function
+
+```{r cloudPlotQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+cloudPlotQuad <-
+        function(tweetgram,
+                 bloggram,
+                 newsgram,
+                 partgram,
+                 Type = "UniGram") {
+                par(mfrow = c(2, 2))
+                wordcloud(
+                        as.character(tweetgram$Word),
+                        tweetgram$Frequency,
+                        min.freq = 10,
+                        max.words = 75,
+                        colors = brewer.pal(11, "Paired"),
+                        random.order = F,
+                        random.color = T,
+                        rot.per = .15,
+                        scale = c(4, 0.5)
+                )
+                wordcloud(
+                        as.character(bloggram$Word),
+                        bloggram$Frequency,
+                        min.freq = 10,
+                        max.words = 75,
+                        colors = brewer.pal(11, "Paired"),
+                        random.order = F,
+                        random.color = T,
+                        rot.per = .15,
+                        scale = c(4, 0.5)
+                )
+                wordcloud(
+                        as.character(newsgram$Word),
+                        newsgram$Frequency,
+                        min.freq = 10,
+                        max.words = 75,
+                        colors = brewer.pal(11, "Paired"),
+                        random.order = F,
+                        random.color = T,
+                        rot.per = .15,
+                        scale = c(4, 0.5)
+                )
+                wordcloud(
+                        as.character(partgram$Word),
+                        partgram$Frequency,
+                        min.freq = 10,
+                        max.words = 75,
+                        colors = brewer.pal(11, "Paired"),
+                        random.order = F,
+                        random.color = T,
+                        rot.per = .15,
+                        scale = c(4, 0.5)
+                )
+                mtext(
+                        paste0("WordCloud of ", Type, "'s"),
+                        side = 2,
+                        line = -2,
+                        outer = TRUE,
+                        col = "blue",
+                        cex = 1.4
+                )
+                mtext(
+                        "News                                          Tweet",
+                        side = 2,
+                        line = -3,
+                        outer = TRUE,
+                        col = "black",
+                        cex = 1.2
+                )
+                mtext(
+                        "All Source                                     Blog",
+                        side = 4,
+                        line = -2,
+                        outer = TRUE,
+                        col = "black",
+                        cex = 1.2
+                )
+                
+                par(mfrow = c(1, 1))
+        }
+```
+
+### Visualization
+Lets Plot th graphs
+
+#### WordCloud of UniGrams across all datasets
+
+```{r cloudPlotQuad1Plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+w1u <- cloudPlotQuad(
+        tweetgram = tweet.unigram,
+        bloggram = blog.unigram,
+        newsgram = news.unigram,
+        partgram = part.unigram,
+        Type = "UniGram"
+)
+```
+
+
+
+#### WordCloud of BiGrams across all datasets
+
+```{r cloudPlotQuad2Plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+w2u <- cloudPlotQuad(
+        tweetgram = tweet.digram,
+        bloggram = blog.digram,
+        newsgram = news.digram,
+        partgram = part.digram,
+        Type = "BiGram"
+)
+```
+
+### Discussion
+
+All application needs different type of modeling as distribution of various grams differes.
+
+
+# Conclusion
+
+Future application Devlopment.
+
+
