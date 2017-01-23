@@ -82,7 +82,7 @@ tokenizer <- function(corpusTitle, tokenCount) {
 
 gramPlot <- function(gram) {
         g <-
-                ggplot(gram, aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                ggplot(gram, aes(x = reorder(Word,-Frequency), y = Frequency)) +
                 geom_bar(stat = "Identity", fill = "orange") +
                 geom_text(aes(label = Frequency),
                           hjust = 1,
@@ -102,7 +102,7 @@ gramPlotQuad <-
                  TopCount = 10) {
                 gtweet <-
                         ggplot(head(tweetgram, TopCount),
-                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                               aes(x = reorder(Word,-Frequency), y = Frequency)) +
                         geom_bar(stat = "Identity", fill = "#1dcaff") +
                         geom_text(aes(label = Frequency),
                                   hjust = 1,
@@ -112,7 +112,7 @@ gramPlotQuad <-
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 gblog <-
                         ggplot(head(bloggram, TopCount),
-                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                               aes(x = reorder(Word,-Frequency), y = Frequency)) +
                         geom_bar(stat = "Identity", fill = "orange") +
                         geom_text(aes(label = Frequency),
                                   hjust = 1,
@@ -122,7 +122,7 @@ gramPlotQuad <-
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 gnews <-
                         ggplot(head(newsgram, TopCount),
-                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                               aes(x = reorder(Word,-Frequency), y = Frequency)) +
                         geom_bar(stat = "Identity", fill = "#87F717") +
                         geom_text(aes(label = Frequency),
                                   hjust = 1,
@@ -132,7 +132,7 @@ gramPlotQuad <-
                         theme(axis.text.x = element_text(angle = 45, hjust = 1))
                 gall <-
                         ggplot(head(partgram, TopCount),
-                               aes(x = reorder(Word, -Frequency), y = Frequency)) +
+                               aes(x = reorder(Word,-Frequency), y = Frequency)) +
                         geom_bar(stat = "Identity", fill = "#F6358A") +
                         geom_text(aes(label = Frequency),
                                   hjust = 1,
@@ -152,11 +152,11 @@ gramPlotQuad <-
 gramTopCount <- function(corpusTitle, tokenCount, TopCount = 0) {
         token <- tokenizer(corpusTitle, tokenCount)
         gram <- data.frame(table(token))
-        gram <- gram[order(gram$Freq, decreasing = T),]
+        gram <- gram[order(gram$Freq, decreasing = T), ]
         rownames(gram) <- NULL
         colnames(gram) <- c("Word", "Frequency")
         if (TopCount > 0) {
-                gram <- gram[1:TopCount,]
+                gram <- gram[1:TopCount, ]
                 print(gramPlot(gram))
         }
         gram
@@ -204,166 +204,240 @@ gramTopCount <- function(corpusTitle, tokenCount, TopCount = 0) {
 # parttime <- Sys.time()
 
 ##ploting
-g1 <- gramPlotQuad(
-        tweetgram = tweet.unigram,
-        bloggram = blog.unigram,
-        newsgram = news.unigram,
-        partgram = part.unigram,
-        title = "UniGram"
-)
-g2 <- gramPlotQuad(
-        tweetgram = tweet.digram,
-        bloggram = blog.digram,
-        newsgram = news.digram,
-        partgram = part.digram,
-        title = "BiGram"
-)
-g3 <- gramPlotQuad(
-        tweetgram = tweet.trigram,
-        bloggram = blog.trigram,
-        newsgram = news.trigram,
-        partgram = part.trigram,
-        title = "TriGram"
-)
-g4 <- gramPlotQuad(
-        tweetgram = tweet.quadgram,
-        bloggram = blog.quadgram,
-        newsgram = news.quadgram,
-        partgram = part.quadgram,
-        title = "QuadGram"
+# g1 <- gramPlotQuad(
+#         tweetgram = tweet.unigram,
+#         bloggram = blog.unigram,
+#         newsgram = news.unigram,
+#         partgram = part.unigram,
+#         title = "UniGram"
+# )
+# g2 <- gramPlotQuad(
+#         tweetgram = tweet.digram,
+#         bloggram = blog.digram,
+#         newsgram = news.digram,
+#         partgram = part.digram,
+#         title = "BiGram"
+# )
+# g3 <- gramPlotQuad(
+#         tweetgram = tweet.trigram,
+#         bloggram = blog.trigram,
+#         newsgram = news.trigram,
+#         partgram = part.trigram,
+#         title = "TriGram"
+# )
+# g4 <- gramPlotQuad(
+#         tweetgram = tweet.quadgram,
+#         bloggram = blog.quadgram,
+#         newsgram = news.quadgram,
+#         partgram = part.quadgram,
+#         title = "QuadGram"
+# )
+#
+# #other Plots
+#
+# cloudPlotDuo <- function(unigram, digram, Type = "None") {
+#         par(mfrow = c(1, 2))
+#         wordcloud(
+#                 as.character(unigram$Word),
+#                 unigram$Frequency,
+#                 min.freq = 100,
+#                 max.words = 100,
+#                 colors = brewer.pal(11, "Paired"),
+#                 random.order = F,
+#                 random.color = T,
+#                 rot.per = .15,
+#                 scale = c(4, 0.5),
+#                 main = paste("WordCloud of", Type, "UniGram")
+#         )
+#         wordcloud(
+#                 as.character(digram$Word),
+#                 digram$Frequency,
+#                 min.freq = 25,
+#                 max.words = 75,
+#                 colors = brewer.pal(11, "Paired"),
+#                 random.order = F,
+#                 random.color = T,
+#                 rot.per = .15,
+#                 scale = c(4, 0.5),
+#                 main = paste("WordCloud of", Type, "BiGram")
+#         )
+#         mtext(
+#                 paste("WordCloud of UniGram & Bigram of", Type),
+#                 side = 3,
+#                 line = -2,
+#                 outer = TRUE
+#         )
+#         par(mfrow = c(1, 1))
+# }
+# cloudPlotDuo(tweet.unigram, tweet.digram, "Tweets")
+# cloudPlotDuo(blog.unigram, blog.digram, "Blogs")
+# cloudPlotDuo(news.unigram, news.digram, "News")
+# cloudPlotDuo(part.unigram, part.digram, "All Source")
+#
+# cloudPlotQuad <-
+#         function(tweetgram,
+#                  bloggram,
+#                  newsgram,
+#                  partgram,
+#                  Type = "UniGram") {
+#                 par(mfrow = c(2, 2))
+#                 wordcloud(
+#                         as.character(tweetgram$Word),
+#                         tweetgram$Frequency,
+#                         min.freq = 10,
+#                         max.words = 75,
+#                         colors = brewer.pal(11, "Paired"),
+#                         random.order = F,
+#                         random.color = T,
+#                         rot.per = .15,
+#                         scale = c(4, 0.5)
+#                 )
+#                 wordcloud(
+#                         as.character(bloggram$Word),
+#                         bloggram$Frequency,
+#                         min.freq = 10,
+#                         max.words = 75,
+#                         colors = brewer.pal(11, "Paired"),
+#                         random.order = F,
+#                         random.color = T,
+#                         rot.per = .15,
+#                         scale = c(4, 0.5)
+#                 )
+#                 wordcloud(
+#                         as.character(newsgram$Word),
+#                         newsgram$Frequency,
+#                         min.freq = 10,
+#                         max.words = 75,
+#                         colors = brewer.pal(11, "Paired"),
+#                         random.order = F,
+#                         random.color = T,
+#                         rot.per = .15,
+#                         scale = c(4, 0.5)
+#                 )
+#                 wordcloud(
+#                         as.character(partgram$Word),
+#                         partgram$Frequency,
+#                         min.freq = 10,
+#                         max.words = 75,
+#                         colors = brewer.pal(11, "Paired"),
+#                         random.order = F,
+#                         random.color = T,
+#                         rot.per = .15,
+#                         scale = c(4, 0.5)
+#                 )
+#                 mtext(
+#                         paste0("WordCloud of ", Type, "'s"),
+#                         side = 2,
+#                         line = -2,
+#                         outer = TRUE,
+#                         col = "blue",
+#                         cex = 1.4
+#                 )
+#                 mtext(
+#                         "News                                          Tweet",
+#                         side = 2,
+#                         line = -3,
+#                         outer = TRUE,
+#                         col = "black",
+#                         cex = 1.2
+#                 )
+#                 mtext(
+#                         "All Source                                     Blog",
+#                         side = 4,
+#                         line = -2,
+#                         outer = TRUE,
+#                         col = "black",
+#                         cex = 1.2
+#                 )
+#
+#                 par(mfrow = c(1, 1))
+#         }
+#
+# w1u <- cloudPlotQuad(
+#         tweetgram = tweet.unigram,
+#         bloggram = blog.unigram,
+#         newsgram = news.unigram,
+#         partgram = part.unigram,
+#         Type = "UniGram"
+# )
+# w2u <- cloudPlotQuad(
+#         tweetgram = tweet.digram,
+#         bloggram = blog.digram,
+#         newsgram = news.digram,
+#         partgram = part.digram,
+#         Type = "BiGram"
+# )
+
+load(
+        "/Users/VirKrupa/Documents/01_Courses/40_DataScience_Capstone/Assignment/DataScience_CapStone/00_Data/final_plot_Data.RData"
 )
 
-#other Plots
-
-cloudPlotDuo <- function(unigram, digram, Type = "None") {
-        par(mfrow = c(1, 2))
-        wordcloud(
-                as.character(unigram$Word),
-                unigram$Frequency,
-                min.freq = 100,
-                max.words = 100,
-                colors = brewer.pal(11, "Paired"),
-                random.order = F,
-                random.color = T,
-                rot.per = .15,
-                scale = c(4, 0.5),
-                main = paste("WordCloud of", Type, "UniGram")
-        )
-        wordcloud(
-                as.character(digram$Word),
-                digram$Frequency,
-                min.freq = 25,
-                max.words = 75,
-                colors = brewer.pal(11, "Paired"),
-                random.order = F,
-                random.color = T,
-                rot.per = .15,
-                scale = c(4, 0.5),
-                main = paste("WordCloud of", Type, "BiGram")
-        )
-        mtext(
-                paste("WordCloud of UniGram & Bigram of", Type),
-                side = 3,
-                line = -2,
-                outer = TRUE
-        )
-        par(mfrow = c(1, 1))
-}
-cloudPlotDuo(tweet.unigram, tweet.digram, "Tweets")
-cloudPlotDuo(blog.unigram, blog.digram, "Blogs")
-cloudPlotDuo(news.unigram, news.digram, "News")
-cloudPlotDuo(part.unigram, part.digram, "All Source")
-
-cloudPlotQuad <-
-        function(tweetgram,
-                 bloggram,
-                 newsgram,
-                 partgram,
-                 Type = "UniGram") {
-                par(mfrow = c(2, 2))
-                wordcloud(
-                        as.character(tweetgram$Word),
-                        tweetgram$Frequency,
-                        min.freq = 10,
-                        max.words = 75,
-                        colors = brewer.pal(11, "Paired"),
-                        random.order = F,
-                        random.color = T,
-                        rot.per = .15,
-                        scale = c(4, 0.5)
-                )
-                wordcloud(
-                        as.character(bloggram$Word),
-                        bloggram$Frequency,
-                        min.freq = 10,
-                        max.words = 75,
-                        colors = brewer.pal(11, "Paired"),
-                        random.order = F,
-                        random.color = T,
-                        rot.per = .15,
-                        scale = c(4, 0.5)
-                )
-                wordcloud(
-                        as.character(newsgram$Word),
-                        newsgram$Frequency,
-                        min.freq = 10,
-                        max.words = 75,
-                        colors = brewer.pal(11, "Paired"),
-                        random.order = F,
-                        random.color = T,
-                        rot.per = .15,
-                        scale = c(4, 0.5)
-                )
-                wordcloud(
-                        as.character(partgram$Word),
-                        partgram$Frequency,
-                        min.freq = 10,
-                        max.words = 75,
-                        colors = brewer.pal(11, "Paired"),
-                        random.order = F,
-                        random.color = T,
-                        rot.per = .15,
-                        scale = c(4, 0.5)
-                )
-                mtext(
-                        paste0("WordCloud of ", Type, "'s"),
-                        side = 2,
-                        line = -2,
-                        outer = TRUE,
-                        col = "blue",
-                        cex = 1.4
-                )
-                mtext(
-                        "News                                          Tweet",
-                        side = 2,
-                        line = -3,
-                        outer = TRUE,
-                        col = "black",
-                        cex = 1.2
-                )
-                mtext(
-                        "All Source                                     Blog",
-                        side = 4,
-                        line = -2,
-                        outer = TRUE,
-                        col = "black",
-                        cex = 1.2
-                )
-                
-                par(mfrow = c(1, 1))
-        }
-
-w1u <- cloudPlotQuad(
-        tweetgram = tweet.unigram,
-        bloggram = blog.unigram,
-        newsgram = news.unigram,
-        partgram = part.unigram,
-        Type = "UniGram"
-)
-w2u <- cloudPlotQuad(
-        tweetgram = tweet.digram,
-        bloggram = blog.digram,
-        newsgram = news.digram,
-        partgram = part.digram,
-        Type = "BiGram"
-)
+# plot5090interval <- function(gram, title = "") {
+#         total <- sum(gram$Frequency)
+#         gram$cumFreq <- 100 * cumsum(gram$Frequency) / total
+#         yintercept50 <- 50
+#         yintercept90 <- 90
+#         xintercept50 = sum(gram$cumFreq < yintercept50)
+#         xintercept90 = sum(gram$cumFreq < yintercept90)
+#         g <-
+#                 ggplot(gram, aes(y = cumFreq, x = seq_along(cumFreq))) +
+#                 geom_line() +
+#                 geom_hline(yintercept = yintercept50, col = "green") +
+#                 geom_hline(yintercept = yintercept90, col = "blue") +
+#                 geom_vline(xintercept = xintercept50, col = "green") +
+#                 geom_vline(xintercept = xintercept90, col = "blue") +
+#                 xlab("Words") +
+#                 ylab("Cumulative Frequency") +
+#                 ggtitle(paste0(
+#                         title,
+#                         " [50%, ",
+#                         xintercept50,
+#                         "] & [90%, ",
+#                         xintercept90,
+#                         "] Words"
+#                 ))
+#         g
+# }
+# 
+# Plot5090intervalQuad <- function(tweetgram,
+#                                  bloggram,
+#                                  newsgram,
+#                                  partgram,
+#                                  title = "NoGram") {
+#         g1 <- plot5090interval(tweetgram, title = paste0("Tweet ", title))
+#         g2 <-
+#                 plot5090interval(bloggram, title = paste0("Blog ", title))
+#         g3 <-
+#                 plot5090interval(newsgram, title = paste0("News ", title))
+#         g4 <-
+#                 plot5090interval(partgram, title = paste0("All Source ", title))
+#         grid.arrange(g1, g2, g3, g4, ncol = 2, nrow = 2)
+# }
+# p1 <- Plot5090intervalQuad(
+#         tweetgram = tweet.unigram,
+#         bloggram = blog.unigram,
+#         newsgram = news.unigram,
+#         partgram = part.unigram,
+#         title = "UniGram"
+# )
+# p2 <- Plot5090intervalQuad(
+#         tweetgram = tweet.digram,
+#         bloggram = blog.digram,
+#         newsgram = news.digram,
+#         partgram = part.digram,
+#         title = "BiGram"
+# )
+# p3 <- Plot5090intervalQuad(
+#         tweetgram = tweet.trigram,
+#         bloggram = blog.trigram,
+#         newsgram = news.trigram,
+#         partgram = part.trigram,
+#         title = "TriGram"
+# )
+# p4 <- Plot5090intervalQuad(
+#         tweetgram = tweet.quadgram,
+#         bloggram = blog.quadgram,
+#         newsgram = news.quadgram,
+#         partgram = part.quadgram,
+#         title = "QuadGram"
+# )

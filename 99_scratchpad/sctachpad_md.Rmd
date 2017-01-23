@@ -2,12 +2,12 @@
 title: "Scratchpad"
 author: "Manojkumar Parmar"
 date: "1/23/2017"
-output: 
-  pdf_document: 
+output:
+  pdf_document:
     number_sections: yes
     toc: yes
     toc_depth: 5
-  html_document: 
+  html_document:
     number_sections: yes
     theme: journal
     toc: yes
@@ -273,7 +273,7 @@ gramPlotQuad <-
 load("/Users/VirKrupa/Documents/01_Courses/40_DataScience_Capstone/Assignment/DataScience_CapStone/00_Data/final_plot_Data.RData")
 ```
 
-Lets Plot th graphs
+Lets Plot the graphs
 
 #### Top 10 UniGrams across all datasets
 
@@ -342,6 +342,132 @@ g4 <- gramPlotQuad(
 
 ```{r gramPlotQuadVis4plot, echo=FALSE, fig.height=9, fig.width=10, message=FALSE, warning=FALSE}
 grid.arrange(g4)
+```
+
+### Discussion
+
+All application needs different type of modeling as distribution of various grams differes.
+
+## Unique Word Analysis for 50% and 90% coverage
+
+### Function
+
+```{r Plot5090intervalQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+plot5090interval <- function(gram, title = "") {
+        total <- sum(gram$Frequency)
+        gram$cumFreq <- 100 * cumsum(gram$Frequency) / total
+        yintercept50 <- 50
+        yintercept90 <- 90
+        xintercept50 = sum(gram$cumFreq < yintercept50)
+        xintercept90 = sum(gram$cumFreq < yintercept90)
+        g <-
+                ggplot(gram, aes(y = cumFreq, x = seq_along(cumFreq))) +
+                geom_line() +
+                geom_hline(yintercept = yintercept50, col = "green") +
+                geom_hline(yintercept = yintercept90, col = "blue") +
+                geom_vline(xintercept = xintercept50, col = "green") +
+                geom_vline(xintercept = xintercept90, col = "blue") +
+                xlab("Words") +
+                ylab("Cumulative Frequency") +
+                ggtitle(paste0(
+                        title,
+                        " [50%, ",
+                        xintercept50,
+                        "] & [90%, ",
+                        xintercept90,
+                        "] Words"
+                ))
+        g
+}
+
+Plot5090intervalQuad <- function(tweetgram,
+                                 bloggram,
+                                 newsgram,
+                                 partgram,
+                                 title = "NoGram") {
+        g1 <- plot5090interval(tweetgram, title = paste0("Tweet ", title))
+        g2 <-
+                plot5090interval(bloggram, title = paste0("Blog ", title))
+        g3 <-
+                plot5090interval(newsgram, title = paste0("News ", title))
+        g4 <-
+                plot5090interval(partgram, title = paste0("All Source ", title))
+        grid.arrange(g1, g2, g3, g4, ncol = 2, nrow = 2)
+}
+```
+
+
+### Visualization
+
+Lets Plot the graphs
+
+#### Coverage of UniGrams across all datasets
+
+```{r Plot5090intervalQuadFunction1, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+p1 <- Plot5090intervalQuad(
+        tweetgram = tweet.unigram,
+        bloggram = blog.unigram,
+        newsgram = news.unigram,
+        partgram = part.unigram,
+        title = "UniGram"
+)
+```
+
+```{r Plot5090intervalQuadFunction1plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(p1)
+```
+
+
+#### Coverage of Bigrams across all datasets
+
+```{r Plot5090intervalQuadFunction2, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+p2 <- Plot5090intervalQuad(
+        tweetgram = tweet.digram,
+        bloggram = blog.digram,
+        newsgram = news.digram,
+        partgram = part.digram,
+        title = "BiGram"
+)
+```
+
+```{r Plot5090intervalQuadFunction2plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(p2)
+```
+
+#### Coverage of TriGrams across all datasets
+
+```{r Plot5090intervalQuadFunction3, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+p3 <- Plot5090intervalQuad(
+        tweetgram = tweet.trigram,
+        bloggram = blog.trigram,
+        newsgram = news.trigram,
+        partgram = part.trigram,
+        title = "TriGram"
+)
+```
+
+```{r Plot5090intervalQuadFunction3plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(p3)
+```
+
+#### Coverage of QuadGrams across all datasets
+
+```{r Plot5090intervalQuadFunction4, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
+##ploting
+p4 <- Plot5090intervalQuad(
+        tweetgram = tweet.quadgram,
+        bloggram = blog.quadgram,
+        newsgram = news.quadgram,
+        partgram = part.quadgram,
+        title = "QuadGram"
+)
+```
+
+```{r Plot5090intervalQuadFunction4plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
+grid.arrange(p4)
 ```
 
 ### Discussion
