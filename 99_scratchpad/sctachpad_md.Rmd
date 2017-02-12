@@ -1,24 +1,27 @@
 ---
 title: "Scratchpad"
 author: "Manojkumar Parmar"
-date: "1/23/2017"
+date: "2/12/2017"
 output:
-  pdf_document:
-    number_sections: yes
-    toc: yes
-    toc_depth: 5
-  html_document:
-    number_sections: yes
-    theme: journal
-    toc: yes
+html_document:
+number_sections: yes
+theme: journal
+toc: yes
+pdf_document:
+number_sections: yes
+toc: yes
+toc_depth: 5
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Environment
-```{r loadlibraries, echo=TRUE, message=FALSE, warning=FALSE}
+#Executive Summary
+The goal of this project is to analyse the corpus data provided from various sources like tweeter, news sites & blog sites and to come up with a strategy for predicting next word from partial sentences/words.This strategy/modeling technique will be used to build shiny app. This reports includes data fetching, generating summary statistics on data and then cleaning of data using principles of natural language processing. On cleaned data, first ngrams up to quad grams are generated and then various exploratory techniques are used to provide insight of data & underlying pattern in data. Histogram (Quantitative technique) of frequently occurring words provides with top words and provides nature of distribution of top words. Unique word coverage of 50% & 90% (Quantitative technique) provides a detail about how much words are necessary to cover up 50% & 90% of corpus. It also helps to understand underlying distribution of words & ngrams. Word-cloud (Visual technique) is used to represent most occurring terms and which is helpful in unearthing dependent patterns. Tweeter data stands out differently in various analysis and hence it is needed to be treated different in final modeling.
+
+
+```{r loadlibraries, message=FALSE, warning=FALSE, include=FALSE}
 #load libraries
 library(datasets)
 library(tm)
@@ -32,6 +35,11 @@ rm(list = ls())
 cat("\014")
 ```
 
+# Introduction
+
+The [data provided](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) in the course site comprises four sets of files (de_DE - Danish, en_US - English,fi_FI - Finnish an ru_RU - Russian), with each set containing 3 text files with texts from blogs, news/media sites and twitter. In this analysis we will focus English set of files: . en_US.blogs.txt . en_US.news.txt . en_US.twitter.txt. For analysis, English corpus is used.
+
+This report aims to let the reader understand the training dataset used to develop the text prediction engine of a shiny application that is able to predict the next word based on the user’s input. Some of the key tasks that will be described in this report include data acquisition, data pre-processing as well as data exploration in the field of natural language processing.
 
 # Procesing Data
 
@@ -54,7 +62,38 @@ if(! file.exists("./00_Data/All_Read.RData")){
 }
 ```
 
-Dataset is too big hence & only $1$% of tweet data, $1.5$% of blog data and $1.5$% of news data is used. Also combined version of all data is also prepared.
+
+## Summary Statistics
+
+```{r sumStatCalc, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+blogsWords <- sum(sapply(gregexpr("\\S+", contentBlog), length))
+newsWords <- sum(sapply(gregexpr("\\S+", contentNews), length))
+twitterWords <- sum(sapply(gregexpr("\\S+", contentTweet), length))
+blogsLength <- length(contentBlog)
+newsLength <- length(contentNews)
+twitterLength <- length(contentTweet)
+blogsFile <- file.info("00_Data/final/en_US/en_US.blogs.txt")$size / 1024.0 / 1024.0
+newsFile <- file.info("00_Data/final/en_US/en_US.news.txt")$size / 1024.0 / 1024.0
+twitterFile <- file.info("00_Data/final/en_US/en_US.twitter.txt")$size / 1024.0 / 1024.0
+fileSummary <- data.frame(
+        fileName = c("Blogs","News","Twitter"),
+        fileSize = c(round(blogsFile, digits = 2), 
+                     round(newsFile,digits = 2), 
+                     round(twitterFile, digits = 2)),
+        lineCount = c(blogsLength, newsLength, twitterLength),
+        wordCount = c(blogsWords, newsWords, twitterWords)                  
+)
+colnames(fileSummary) <- c("File Name", "File Size in Megabyte", "Line Count", "Word Count")
+```
+
+The following table provides an overview of the imported data. In addition to the size of each data set, the number of lines and words are displayed.
+
+```{r statdisp, echo=FALSE, message=FALSE, warning=FALSE}
+load("/Users/VirKrupa/Documents/01_Courses/40_DataScience_Capstone/Assignment/DataScience_CapStone/00_Data/filesummarystat.RData")
+knitr::kable(head(fileSummary, 10))
+```
+
+Dataset is too big hence only $1$% of tweet data, $1.5$% of blog data and $1.5$% of news data is used. Also combined version of all data is also prepared.
 ```{r resize, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 set.seed(1)
 contentTweet <- sample(contentTweet, length(contentTweet)* 0.01)
@@ -109,7 +148,7 @@ tm_pre_process <- function(data) {
         stpWrdList <- c(as.character(pwdat[,1]), 
                         pwdat1,
                         stopwords("english")
-                        )
+        )
         
         corpusTitle = Corpus(VectorSource(data))
         corpusTitle = tm_map(corpusTitle, tolower)
@@ -127,7 +166,7 @@ tm_pre_process <- function(data) {
 }
 ```
 
-Using above mentioned pre processing function, lets clean all corpus.
+Using above mentioned pre processing function, corpus is being cleaned.
 ```{r processingdata, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 corpusTweet <- tm_pre_process(contentTweet)
 corpusNews <- tm_pre_process(contentNews)
@@ -137,14 +176,14 @@ corpusPart <- tm_pre_process(contentPart)
 
 ## Tokenization of data
 
-Tokenization function generates dataset based on given token count. Multiple token count is refered as per below
+Tokenization function generates dataset based on given token count. Multiple token count is refereed as per below
 
 - 1 token : UniGram
 - 2 token : BiGram
 - 3 token : TriGram
 - 4 token : QuadGram
 
-Tokenization function also provides top enties where maximum freuqncy of tokens are present.
+Tokenization function also provides top entries where maximum frequency of tokens are present.
 
 ```{r tokenfunc, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 #tokenizer function
@@ -175,7 +214,7 @@ gramTopCount <- function(corpusTitle, tokenCount, TopCount = 0) {
 }
 ```
 
-Using above function, lets tokenize various corpses.
+Using above function, corpus of various data is tokenized for further visualization & summary statistics.
 ```{r tokenizationdata, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 #Generate unigram, bigram, trigram & quadgram for blog dataset
 blog.unigram <- gramTopCount(corpusBlog, 1)
@@ -201,9 +240,16 @@ part.quadgram <- gramTopCount(corpusPart, 4)
 
 # Visualization
 
+Visualization of various aspect data is key aspect of exploratory data analysis. In this chapter, various visualizations are used to provide insight in to data. 
+Histogram, Unique word analysis for 50% & 90% coverage and WordCloud methodologies are used.
+
 ## Histogram
 
+Histograms shows representation of the distribution of data. In context o this analysis, histogram shows the frequency of occurrence of various words & its combinations. This analysis is useful to understand distribution of words and pattern of various n-grams.
+
 ### Function
+
+To use the repetitive analysis on various n-grams, simple function is designed to calculate histogram with top entries (configurable) from  4 corpus data (tweet, blog, news, combination). This function generates 4 histogram and then arranges them in panel of 2x2 for better visualization.
 
 ```{r gramPlotQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 gramPlotQuad <-
@@ -273,7 +319,7 @@ gramPlotQuad <-
 load("/Users/VirKrupa/Documents/01_Courses/40_DataScience_Capstone/Assignment/DataScience_CapStone/00_Data/final_plot_Data.RData")
 ```
 
-Lets Plot the graphs
+In this chapter, previously defined histogram function is used to generate analysis for Unigram, Bigram, Trigram & Quadgram for top 10 entries.
 
 #### Top 10 UniGrams across all datasets
 
@@ -291,7 +337,6 @@ g1 <- gramPlotQuad(
 ```{r gramPlotQuadVis1plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
 grid.arrange(g1)
 ```
-
 
 #### Top 10 Bigrams across all datasets
 
@@ -346,11 +391,18 @@ grid.arrange(g4)
 
 ### Discussion
 
-All application needs different type of modeling as distribution of various grams differes.
+- For Unigram, news corpus distribution dominates combined corpus. Pattern of news , blogs & tweet corpus is different. Combined corpus shows aggregate pattern which is weighted average of 3 corpus.
+- For Bigram, no corpus distribution dominates the combined corpus. Frequency of occurrence of bigrams are ~10 times lesser then unigrams which is normal in nature. 
+- For Trigram, tweet corpus distribution dominates combined corpus. Frequency of occurrence of bigrams are ~10 times lesser then bigrams and ~100 times lesser then unigrams.
+- For Quadgrams, tweet corpus distribution dominates combined corpus. However, frequencies are so small and conclusion is not reliable. 
 
 ## Unique Word Analysis for 50% and 90% coverage
 
+Unique word analysis is technique derived from Cumulative Distribution Function. Here each unique word/n-gram is assigned a probability based on occurrence in given corpus and then CDF of same is calculated. 50% coverage means, how many unique words are needed to represent 50% of corpus and similarly 90% coverage means how many unique words are needed to represent 90% of corpus. This analysis, provides an insight about how much words are needed to cover part of corpus.
+
 ### Function
+
+To use the repetitive analysis on various n-grams, simple function is designed to calculate coverage of 50% and 90% from  4 corpus data (tweet, blog, news, combination). This function generates 4 CDF and then arranges them in panel of 2x2 for better visualization. 50% coverage related lines are drawn in green and 90% related lines are drawn in blue. Exact number of entries needed are displayed in title of each figure for 50% & 90% coverage.
 
 ```{r Plot5090intervalQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 plot5090interval <- function(gram, title = "") {
@@ -396,10 +448,9 @@ Plot5090intervalQuad <- function(tweetgram,
 }
 ```
 
-
 ### Visualization
 
-Lets Plot the graphs
+In this chapter, previously defined coverage function is used to generate analysis for Unigram, Bigram, Trigram & Quadgram with 50% & 90% coverage.
 
 #### Coverage of UniGrams across all datasets
 
@@ -417,7 +468,6 @@ p1 <- Plot5090intervalQuad(
 ```{r Plot5090intervalQuadFunction1plot, echo=FALSE, fig.height=7, fig.width=10, message=FALSE, warning=FALSE}
 grid.arrange(p1)
 ```
-
 
 #### Coverage of Bigrams across all datasets
 
@@ -472,11 +522,17 @@ grid.arrange(p4)
 
 ### Discussion
 
-All application needs different type of modeling as distribution of various grams differes.
+- For Unigram, all data corpus follows CDF curve which is representative of normal distribution function. However , tweet corpus needs only $510$ words to represent 50% which is 2 times less of any other corpus. Similarly 90% coverage in tweet corpus is achieved by $10122$ words which is 1.5 times less of any other corpus. Combined corpus shows aggregation effect.
+- For Bigram, all data corpus follows unique CDF which is representative of normal distribution up to a limit and then represents uniform distribution. This means there are set of bigrams which are high on probability and remaining have uniform probability. Tweet corpus again stands out as 50% and 90% overage count is almost 8 times & 2.5 times less.  Due to availability of uniform distribution, combined corpus shows surprising behavior. Combined corpus 50% & 90 % coverage comes at almost 1.75 times and 2.5 times higher than that of all individual corpus.
+- For Trigram & Quadgram, all data corpus shows CDF pattern which is representative of uniform distribution only. Due to nature of uniform distribution, combined corpus shows behavior which is similar to that of bigrams.
 
 ## WordCloud
 
+A WordCloud is a visual representation of text data, typically used to depict keyword to visualize free form text. Usually single words (ngrams are possible) are used and importance of same is depicted by font size and color. This analysis provides an insight of prominent words/ngrams from content point of view and utilizes human visualization bandwidth to unearth the prominent patterns.
+
 ### Function
+
+To use the repetitive analysis on single word & bigrams, simple function is designed to generate wordcloud from 4 corpus data (tweet, blog, news, combination). This function generates 4 wordcloud and then arranges them in panel of 2x2 for better visualization. At max, wordcloud can take show 75 entries provided each entry is occurring for more than 10 times in in corpus.
 
 ```{r cloudPlotQuadFunction, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 cloudPlotQuad <-
@@ -560,7 +616,8 @@ cloudPlotQuad <-
 ```
 
 ### Visualization
-Lets Plot th graphs
+
+In this chapter, previously defined wordcloud function is used to generate wordcloud for Unigram, Bigram.
 
 #### WordCloud of UniGrams across all datasets
 
@@ -573,8 +630,6 @@ w1u <- cloudPlotQuad(
         Type = "UniGram"
 )
 ```
-
-
 
 #### WordCloud of BiGrams across all datasets
 
@@ -590,11 +645,23 @@ w2u <- cloudPlotQuad(
 
 ### Discussion
 
-All application needs different type of modeling as distribution of various grams differes.
-
+- For Unigram, wordcloud of all corpus provides a stunning differences in terms of occurrences. Also note that top 10 entries from histogram functions are in center. News wordcloud reveals that one specific word "said" is dominating in nature. This is not surprising as news article often cites other people's opinion (like he/she said that ...).
+- For Bigram, wordcloud of all corpus is just expanded view of histogram. Intersting part is, due to normal distribution of some bigrams as identified in unique word coverage, combined corpus wordcloud is dominated by main bigrams from individual corpus. It reminds the superposition theorem.
 
 # Conclusion
 
-Future application Devlopment.
+- With a vocabulary of 1% of the total number of words we can predict 91% of the text.
+- Twitter corpus has to be treated differently as characteristics of this corpus is different and in some cases heavily influences combined corpus. Hence in app, it is needed to provide twitter and non twitter mode
+- In unigram & bigram, there exist a lot of low frequency terms which needs to be dropped. However trigram & quadgram have uniform distribution which means more terms with low frequency will be needed
+- Train two different  prediction algorithm based on n-grams with backtracking. One for twitter corpus only and one for other combined corpus
+- Do not remove any words (including stop words or even profanity words) from the list in order to avoid creating “holes” in the data that could lead to incorrect n-grams and incorrect prediction
+-Ensure that profanity words are not predicted at all (existing approach to remove profanity words from corpus is sufficient)
+- Data corpus is huge and we intend to design lightweight application which means during modeling care needs to be taken on run time & memory consumption. Additionally trade off with accuracy need to be done carefully to improve overall usability of app
 
+
+# Reproducibility
+```{r}
+sessionInfo()
+```
+Source & relevant files can be found at git hub repository : https://github.com/parmarmanojkumar/DataScience_CapStone.git
 
