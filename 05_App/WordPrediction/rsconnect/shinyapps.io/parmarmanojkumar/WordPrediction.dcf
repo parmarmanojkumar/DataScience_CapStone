@@ -3,9 +3,9 @@ title: WordPrediction
 account: parmarmanojkumar
 server: shinyapps.io
 appId: 159490
-bundleId: 725586
+bundleId: 725663
 url: https://parmarmanojkumar.shinyapps.io/WordPrediction/
-when: 1488129230.3604
+when: 1488134327.09887
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: wordpredictiondatageneration.R|intermediate_data/.DS_Store|intermediate_data/cleansamplenormal.RData|intermediate_data/cleansampletwitter10p.RData|intermediate_data/Twitter_ngram_2gram.csv|intermediate_data/Twitter_ngram_3gram.csv|intermediate_data/Twitter_ngram_4gram.csv|sampleall/SampleNormal.txt|sampletwitter10p/SampleTwitter10p.txt
+ignoredFiles: wordpredictiondatageneration.R|intermediate_data/.DS_Store|intermediate_data/cleansamplenormal.RData|intermediate_data/cleansampletwitter10p.RData|intermediate_data/Twitter_ngram_2gram.csv|intermediate_data/Twitter_ngram_3gram.csv|intermediate_data/Twitter_ngram_4gram.csv|sampleall/SampleNormal.txt|sampletwitter10p/SampleTwitter10p.txt|www/.DS_Store|www/App_presentation_final.png
